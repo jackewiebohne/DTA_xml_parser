@@ -7,6 +7,7 @@ import German_spelling_and_stopwords_r as gss
 
 
 def PunctuationRemover(wordsstring, normalise_spelling=False, return_list=True):
+    a = wordsstring
     if normalise_spelling == True:
         a = wordsstring.replace('oͤ', 'ö').replace('Oͤ', 'Ö').replace('aͤ', 'ä').replace('Aͤ', 'Ä').replace('uͤ', 'ü').replace('Uͤ', 'Ü')\
             .replace('ſ', 's').replace('æ', 'ae').replace('ï', 'i').replace('ꝛc', 'etc').replace('Ï', 'I').replace('Æ', 'Ae').replace('/', ' ')\
@@ -46,7 +47,7 @@ def WordLabeler(wordlist): #make sure punctuation is removed in the wordlist, ot
     span = [x for x in gss.Spanish_cities.split()]
     spec = [x for x in gss.special_cases.split()]
 
-    for index, word in enumerate((wordlist)): #should this be build in as a second-order conditional?: 'or wordlist[index - 1] not in gss.loc_prepositions and wordlist[index - 1] not in gss.loc_prepositions_caps'
+    for index, word in enumerate((wordlist)):
         # if word in lang:
         #     h.extend(('LANGUAGE:', word))
         if word in spec:
@@ -58,7 +59,7 @@ def WordLabeler(wordlist): #make sure punctuation is removed in the wordlist, ot
                     or wordlist[index - 1] in gss.loc_prepositions_caps:
                 h.extend(('GERMAN_CITY:', word[:-1]))
         if wordlist[index - 1] not in gss.determiners and wordlist[index - 1] not in tc \
-                or wordlist[index-5: index+5] in tc: #to check whether the preceding word is a determiner, which would likely indicate that it is not a city (e.g. 'Essen' == Stadt, 'das Essen'== food) or a territorial classifiers are used in the surroundings of the word
+                or wordlist[index-5: index+5] in tc: #to check whether the preceding word is a determiner, which would likely indicate that it is not a city (e.g. 'Essen' == Stadt, 'das Essen'== food) or if territorial classifiers are used in the surroundings of the word
             if word in ger:
                 h.extend(('GERMAN_CITY:', word))
             if word in reg:
@@ -126,9 +127,8 @@ def WordLabeler(wordlist): #make sure punctuation is removed in the wordlist, ot
             l.append(counter)  # to count how many times l[i] and l[j] were matched
     return l
 
-
-def dta_xml_parser(path_to_files: str, filename: str, csv_header=True, date=True, author=True, publisher_loc=True, text_class=True,
-                   geodata=False, title=False, reference_to_ppl=False, text=False, flush_buffer_n_write_to_file=True):
+def dta_xml_parser(path_to_files: str, csv_filename: str, csv_header=True, date=True, author=True, publisher_loc=True, text_class=True,
+                   geodata=False, title=False, reference_to_ppl=False, text=False, word_count=False, flush_buffer_n_write_to_file=True):
     '''
     Make sure to download all of the DTA's files. link here:
     http://www.deutschestextarchiv.de/download
@@ -141,10 +141,9 @@ def dta_xml_parser(path_to_files: str, filename: str, csv_header=True, date=True
     filename = './DTA outputs/dta_csv.txt'
     '''
 
+    with open(csv_filename, "a", encoding='utf8', errors='ignore') as a:
 
-    with open(filename, "a", encoding='utf8', errors='ignore') as a:
-
-        with open(filename, "r", encoding='utf8', errors='ignore') as r:
+        with open(csv_filename, "r", encoding='utf8', errors='ignore') as r:
 
 ###csv header###
             id = -1
@@ -152,7 +151,7 @@ def dta_xml_parser(path_to_files: str, filename: str, csv_header=True, date=True
             lines = []
             for line in r:
                 counter += 1
-                lines.append(line.split(';')) #the csv separator is a semicolon instead of a comma to avoid possible conflicts with commas in the xml and the geodata lists, which contain commas
+                lines.append(line.split(';')) #the csv separator is an underscore instead of a comma to avoid possible conflicts with commas in the xml and the geodata lists, which contain commas
             if csv_header:
                 try:
                     if lines[0][0] == 'id':
@@ -162,21 +161,22 @@ def dta_xml_parser(path_to_files: str, filename: str, csv_header=True, date=True
                     if date:
                         csv_head += ';date'
                     if author:
-                        csv_head += ';author surname_author firstname'
+                        csv_head += ';author surname;author firstname'
                     if publisher_loc:
                         csv_head += ';publishing location'
                     if text_class:
                         csv_head += ';text class'
                     if geodata:
                         csv_head += ';geodata'
-                    if title:
-                        csv_head += ';title'
                     if reference_to_ppl:
                         csv_head += ';in-text references to people'
+                    if title:
+                        csv_head += ';title'
                     if text:
                         print(
-                            'It is recommended that you parse for text ONLY and set all other parameters to false, '
-                            'including the csv_header')
+                            'Note that the text will be saved in a separate file from the csv in your CWD as \"dta_texts.txt\".')
+                    if word_count:
+                        csv_head += ';word count of text'
                     csv_head += '\n'
                     a.write(csv_head)
 
@@ -189,6 +189,9 @@ def dta_xml_parser(path_to_files: str, filename: str, csv_header=True, date=True
                     if counter == -1 or counter == 0 or id >= counter: #to pick up at the last point
                         with open(xml, 'r', encoding='utf8', errors='ignore') as file:
                             soup = BeautifulSoup(file, features='lxml')
+                            if word_count:
+                                word_counter = 0
+                                doc_words = []
 
         ###date###
                             if date:
@@ -238,8 +241,8 @@ def dta_xml_parser(path_to_files: str, filename: str, csv_header=True, date=True
                             if geodata:
                                 try:
                                     temp_string = soup.find('title').text
-                                    new_string = PunctuationRemover(temp_string, normalise_spelling=True, return_list=False)
-                                    norm_string = GermanCityDeLatiniser(new_string)
+                                    new_string = pr(temp_string, normalise_spelling=True, return_list=False)
+                                    norm_string = delat(new_string)
                                     x = WordLabeler(norm_string.split())
                                     string += str(x)
                                 except:
@@ -251,11 +254,11 @@ def dta_xml_parser(path_to_files: str, filename: str, csv_header=True, date=True
                                     temp_string2 = ''
                                     for tag in lbs:
                                         temp_string2 += tag.text
-                                    new_string2 = PunctuationRemover(temp_string2, normalise_spelling=True, return_list=False)
+                                    new_string2 = pr(temp_string2, normalise_spelling=True, return_list=False)
                                     duration1 = time.time()-start1
                                     print('punctuation removed. duration:', duration1)
                                     start2 = time.time()
-                                    norm_string2 = GermanCityDeLatiniser(new_string2)
+                                    norm_string2 = delat(new_string2)
                                     duration2 = time.time() - start2
                                     print('delatinised german cities. duration:', duration2)
                                     start3 = time.time()
@@ -266,14 +269,6 @@ def dta_xml_parser(path_to_files: str, filename: str, csv_header=True, date=True
                                 except:
                                     string += ';'
                                     continue
-
-        ###title###
-                            if title:
-                                try:
-                                    string += ';' + soup.find('title').text
-                                except:
-                                    string += ';-99999'
-                                    pass
 
         ###references to ppl (incl. author) themselves in the text###
                             if reference_to_ppl:
@@ -293,20 +288,44 @@ def dta_xml_parser(path_to_files: str, filename: str, csv_header=True, date=True
                                     string += ';'
                                     string += word
 
+        ###title###
+                            if title or word_count:
+                                try:
+                                    if title:
+                                        string += ';' + soup.find('title').text
+                                    if word_count:
+                                        doc_words.append(soup.find('title').text)
+                                except:
+                                    string += ';-99999'
+                                    pass
+
         ###text###
-                            if text:
+                            if text or word_count:
+                                string2 = ''
                                 print('parsing the text')
                                 try:
                                     lbs = soup.find('body').find_all_next('div')
-                                    string += ''
+                                    string2 += ''
+                                    if word_count:
+                                        print('counting words')
                                     for tag in lbs:
-                                        string += tag.text
-                                    string += '\n\n\n'
+                                        string2 += tag.text
+                                        if word_count:
+                                            doc_words.append(tag.text)
+                                    if word_count:
+                                        for element in doc_words:
+                                            for word in element.split():
+                                                word_counter += 1
                                 except:
                                     string += '-99999\n'
                                     pass
-                            string += '\n'
                             a.write(string)
+                            if text:
+                                with open('./dta_texts.txt', "a", encoding='utf8', errors='ignore') as t:
+                                    string2 += '/////////////////\n\n\n\n'
+                                    t.write('text id: ' + str(id) + '\n'+ string2)
+                            if word_count:
+                                a.write(';' + str(word_counter) + '\n')
                             if flush_buffer_n_write_to_file:
                                 a.flush()  # flushing internal buffers
                                 os.fsync(a.fileno())  # force-writing buffers to file
