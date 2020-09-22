@@ -9,4 +9,4 @@ The parser also includes:
   3) a function called wordlabeler that (despite its more general name) checks the texts & titles for geodata (e.g. German cities) and then outputs a list that states that (e.g.) it's found a German city, the name of the city, and the number of occurrences. Sample output of the wordlabeler looks like this: ['ITALIAN_CITY:', 'Rom', 9] , or also: ['ITALIAN_CITY:', 'Rom', 11, 'GERMAN_CITY:', 'Regensburg', 'ITALIAN_CITY:', 'Venedig']. This can (should!) be appended to other output (like date, authorname..) to a csv.
 
 Parsing for geodata will take a long time (several hours on my laptop). The parser can be stopped and then run again to pick up at the last parse (this is the default setting, unless you change the filename/filelocation that is put into the function as function parameter.
-Currently working on optimising the parser for Cython. Feel free to test if it's faster with Pypy (there should be some decent speed gains).
+Feel free to test if it's faster with Pypy (there should be some decent speed gains).
