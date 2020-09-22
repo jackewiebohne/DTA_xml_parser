@@ -10,3 +10,5 @@ The parser also includes:
 
 Parsing for geodata will take a long time (several hours on my laptop). The parser can be stopped and then run again to pick up at the last parse (this is the default setting, unless you change the filename/filelocation that is put into the function as function parameter.
 Feel free to test if it's faster with Pypy (there should be some decent speed gains).
+
+I've also built a csv cleaner for the parser to get rid of some clutter and special characters as well as to filter country-specific geodata, unique geodata, etc.
